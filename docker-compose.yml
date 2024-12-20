@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    environment:
+      - QUERY_DEFAULTS_LIMIT=20
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - ENABLE_MODULES='text2vec-cohere,text2vec-huggingface,text2vec-openai'
+    ports:
+      - "8080:8080"   # REST API
+      - "50051:50051"  # gRPC
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - weaviate
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    restart: always
+
+
+volumes:
+  weaviate_data:
